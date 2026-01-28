@@ -37,7 +37,7 @@ if not check_password():
 # ─────────────────────────────
 # App title
 # ─────────────────────────────
-st.title("Interactive Revenue & Credit Dashboard")
+st.title("Summer Camps 2025 Interactive Dashboard")
 
 # ─────────────────────────────
 # Load & clean data
@@ -47,7 +47,7 @@ def load_data():
     df = pd.read_csv("Code Playground - Analysis.csv")
 
     # Clean currency columns
-    for col in ["Revenue", "Credit Awarded"]:
+    for col in ["Revenue", "Credit Awarded (S2/S3/S4)"]:
         df[col] = (
             df[col]
             .replace({",": "", "\\$": ""}, regex=True)
@@ -97,7 +97,7 @@ if start_times:
 # Metrics
 # ─────────────────────────────
 total_revenue = filtered_df["Revenue"].sum()
-total_credit = filtered_df["Credit Awarded"].sum()
+total_credit = filtered_df["Credit Awarded (S2/S3/S4)"].sum()
 
 col1, col2 = st.columns(2)
 
