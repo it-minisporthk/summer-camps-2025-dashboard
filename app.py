@@ -1,7 +1,11 @@
 import streamlit as st
 import pandas as pd
-import streamlit as st
 
+st.set_page_config(page_title="Revenue Dashboard", layout="wide")
+
+# ─────────────────────────────
+# Authentication
+# ─────────────────────────────
 def check_password():
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
@@ -30,22 +34,28 @@ def check_password():
 if not check_password():
     st.stop()
 
-st.set_page_config(page_title="Revenue Dashboard", layout="wide")
+# ─────────────────────────────
+# App title
+# ─────────────────────────────
+st.title("Interactive Revenue & Credit Dashboard")
 
-st.title("Interactive Revenue Dashboard")
-
+# ─────────────────────────────
+# Load & clean data
+# ─────────────────────────────
 @st.cache_data
 def load_data():
     df = pd.read_csv("Code Playground - Analysis.csv")
 
-    # Clean revenue column
-    df["Revenue"] = (
-        df["Revenue"]
-        .replace({",": "", "\\$": ""}, regex=True)
-        .astype(float)
-    )
+    # Clean currency columns
+    for col in ["Revenue", "Credit Awarded"]:
+        df[col] = (
+            df[col]
+            .replace({",": "", "\\$": ""}, regex=True)
+            .astype(float)
+        )
 
     return df
+
 
 df = load_data()
 
@@ -70,7 +80,7 @@ start_times = st.sidebar.multiselect(
 )
 
 # ─────────────────────────────
-# Apply filters only if selected
+# Apply filters conditionally
 # ─────────────────────────────
 filtered_df = df.copy()
 
@@ -87,8 +97,15 @@ if start_times:
 # Metrics
 # ─────────────────────────────
 total_revenue = filtered_df["Revenue"].sum()
+total_credit = filtered_df["Credit Awarded"].sum()
 
-st.metric("Accumulated Revenue", f"${total_revenue:,.2f}")
+col1, col2 = st.columns(2)
+
+with col1:
+    st.metric("Accumulated Revenue", f"${total_revenue:,.2f}")
+
+with col2:
+    st.metric("Accumulated Credit Awarded", f"${total_credit:,.2f}")
 
 # ─────────────────────────────
 # Data preview
