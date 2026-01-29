@@ -7,29 +7,30 @@ st.set_page_config(page_title="Revenue Dashboard", layout="wide")
 # Authentication
 # ─────────────────────────────
 def check_password():
+    # Initialize session state once
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
 
+    # Already authenticated → proceed
     if st.session_state.authenticated:
         return True
 
-    st.title("🔐 Login Required")
+    st.title("🔐 Password Required")
 
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+    password = st.text_input(
+        "Enter password",
+        type="password",
+        key="password_input"
+    )
 
-    if st.button("Login"):
-        if (
-            username == st.secrets["auth"]["username"]
-            and password == st.secrets["auth"]["password"]
-        ):
+    if st.button("Unlock"):
+        if password == st.secrets["auth"]["password"]:
             st.session_state.authenticated = True
             st.rerun()
         else:
-            st.error("Invalid username or password")
+            st.error("Incorrect password")
 
     return False
-
 
 if not check_password():
     st.stop()
