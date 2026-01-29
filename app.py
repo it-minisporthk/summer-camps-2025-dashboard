@@ -6,14 +6,12 @@ st.set_page_config(page_title="Revenue Dashboard", layout="wide")
 # ─────────────────────────────
 # Authentication
 # ─────────────────────────────
-def check_password():
-    # Initialize session state once
+def require_password():
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
 
-    # Already authenticated → proceed
     if st.session_state.authenticated:
-        return True
+        return
 
     st.title("🔐 Password Required")
 
@@ -30,10 +28,9 @@ def check_password():
         else:
             st.error("Incorrect password")
 
-    return False
-
-if not check_password():
     st.stop()
+
+require_password()
 
 # ─────────────────────────────
 # App title
