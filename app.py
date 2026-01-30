@@ -6,31 +6,31 @@ st.set_page_config(page_title="Revenue Dashboard", layout="wide")
 # ─────────────────────────────
 # Authentication
 # ─────────────────────────────
-def require_password():
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
+# def require_password():
+#     if "authenticated" not in st.session_state:
+#         st.session_state.authenticated = False
 
-    if st.session_state.authenticated:
-        return
+#     if st.session_state.authenticated:
+#         return
 
-    st.title("🔐 Password Required")
+#     st.title("🔐 Password Required")
 
-    password = st.text_input(
-        "Enter password",
-        type="password",
-        key="password_input"
-    )
+#     password = st.text_input(
+#         "Enter password",
+#         type="password",
+#         key="password_input"
+#     )
 
-    if st.button("Unlock"):
-        if password == st.secrets["auth"]["password"]:
-            st.session_state.authenticated = True
-            st.rerun()
-        else:
-            st.error("Incorrect password")
+#     if st.button("Unlock"):
+#         if password == st.secrets["auth"]["password"]:
+#             st.session_state.authenticated = True
+#             st.rerun()
+#         else:
+#             st.error("Incorrect password")
 
-    st.stop()
+#     st.stop()
 
-require_password()
+# require_password()
 
 # ─────────────────────────────
 # App title
@@ -42,7 +42,7 @@ st.title("Summer Camps 2025 Interactive Dashboard")
 # ─────────────────────────────
 @st.cache_data
 def load_data():
-    df = pd.read_csv("Code Playground - Analysis.csv")
+    df = pd.read_csv("Summer Camps.csv")
 
     # Clean currency columns
     for col in ["Revenue", "Credit Awarded (S2/S3/S4)"]:
@@ -77,6 +77,11 @@ start_times = st.sidebar.multiselect(
     options=sorted(df["Start Time"].unique())
 )
 
+camp_week = st.sidebar.multiselect(
+    "Camp Week",
+    options=sorted(df["Week"].unique())
+)
+
 # ─────────────────────────────
 # Apply filters conditionally
 # ─────────────────────────────
@@ -90,6 +95,9 @@ if time_of_day:
 
 if start_times:
     filtered_df = filtered_df[filtered_df["Start Time"].isin(start_times)]
+
+if camp_week:
+    filtered_df = filtered_df[filtered_df["Week"].isin(camp_week)]
 
 # ─────────────────────────────
 # Metrics
