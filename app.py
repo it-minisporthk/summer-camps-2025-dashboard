@@ -1,120 +1,111 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Revenue Dashboard", layout="wide")
+st.set_page_config(page_title="Summer Camps Dashboard", layout="wide")
 
-# ─────────────────────────────
-# Authentication
-# ─────────────────────────────
-# def require_password():
-#     if "authenticated" not in st.session_state:
-#         st.session_state.authenticated = False
-
-#     if st.session_state.authenticated:
-#         return
-
-#     st.title("🔐 Password Required")
-
-#     password = st.text_input(
-#         "Enter password",
-#         type="password",
-#         key="password_input"
-#     )
-
-#     if st.button("Unlock"):
-#         if password == st.secrets["auth"]["password"]:
-#             st.session_state.authenticated = True
-#             st.rerun()
-#         else:
-#             st.error("Incorrect password")
-
-#     st.stop()
-
-# require_password()
-
-# ─────────────────────────────
-# App title
-# ─────────────────────────────
-st.title("Summer Camps 2025 Interactive Dashboard")
-
-# ─────────────────────────────
-# Load & clean data
-# ─────────────────────────────
+# Load data
 @st.cache_data
 def load_data():
     df = pd.read_csv("Summer Camps.csv")
 
-    # Clean currency columns
-    for col in ["Revenue", "Credit Awarded (S2/S3/S4)"]:
-        df[col] = (
-            df[col]
-            .replace({",": "", "\\$": ""}, regex=True)
-            .astype(float)
-        )
+    # Clean money columns
+    df["Revenue"] = (
+        df["Revenue"]
+        .replace("[\$,]", "", regex=True)
+        .astype(float)
+    )
+
+    df["Credit Awarded (S2/S3/S4)"] = (
+        df["Credit Awarded (S2/S3/S4)"]
+        .replace("[\$,]", "", regex=True)
+        .astype(float)
+    )
+
+    # Clean utilization %
+    df["Utilization %"] = (
+        df["Utilization %"]
+        .str.replace("%", "")
+        .astype(float)
+    )
+
+    # Make sure numeric fields are numeric
+    df["Quota"] = pd.to_numeric(df["Quota"], errors="coerce")
+    df["Enrollments"] = pd.to_numeric(df["Enrollments"], errors="coerce")
+    df["Waitlist"] = pd.to_numeric(df["Waitlist"], errors="coerce")
 
     return df
 
-
 df = load_data()
 
-# ─────────────────────────────
-# Sidebar filters (optional)
-# ─────────────────────────────
-st.sidebar.header("Filters (leave blank for all)")
+# ------------------
+# Sidebar Filters
+# ------------------
+st.sidebar.header("Filters")
 
-venues = st.sidebar.multiselect(
-    "Venue",
-    options=sorted(df["Venue"].unique())
-)
+venue_filter = st.sidebar.multiselect("Venue", sorted(df["Venue"].dropna().unique()), default=[])
+day_filter = st.sidebar.multiselect("Day of Week (Week)", sorted(df["Week"].dropna().unique()), default=[])
+ampm_filter = st.sidebar.multiselect("Time of Day (AM/PM)", sorted(df["AM/PM"].dropna().unique()), default=[])
+start_time_filter = st.sidebar.multiselect("Start Time", sorted(df["Start Time"].dropna().unique()), default=[])
 
-time_of_day = st.sidebar.multiselect(
-    "Time of Day (AM / PM)",
-    options=sorted(df["AM/PM"].unique())
-)
+# 🔥 Waitlist toggle
+show_waitlist_only = st.sidebar.toggle("Show only classes with waitlist > 0", value=False)
 
-start_times = st.sidebar.multiselect(
-    "Start Time",
-    options=sorted(df["Start Time"].unique())
-)
-
-camp_week = st.sidebar.multiselect(
-    "Camp Week",
-    options=sorted(df["Week"].unique())
-)
-
-# ─────────────────────────────
-# Apply filters conditionally
-# ─────────────────────────────
+# ------------------
+# Apply Filters
+# ------------------
 filtered_df = df.copy()
 
-if venues:
-    filtered_df = filtered_df[filtered_df["Venue"].isin(venues)]
+if venue_filter:
+    filtered_df = filtered_df[filtered_df["Venue"].isin(venue_filter)]
 
-if time_of_day:
-    filtered_df = filtered_df[filtered_df["AM/PM"].isin(time_of_day)]
+if day_filter:
+    filtered_df = filtered_df[filtered_df["Week"].isin(day_filter)]
 
-if start_times:
-    filtered_df = filtered_df[filtered_df["Start Time"].isin(start_times)]
+if ampm_filter:
+    filtered_df = filtered_df[filtered_df["AM/PM"].isin(ampm_filter)]
 
-if camp_week:
-    filtered_df = filtered_df[filtered_df["Week"].isin(camp_week)]
+if start_time_filter:
+    filtered_df = filtered_df[filtered_df["Start Time"].isin(start_time_filter)]
 
-# ─────────────────────────────
-# Metrics
-# ─────────────────────────────
+if show_waitlist_only:
+    filtered_df = filtered_df[filtered_df["Waitlist"] > 0]
+
+# ------------------
+# KPI Row 1
+# ------------------
 total_revenue = filtered_df["Revenue"].sum()
 total_credit = filtered_df["Credit Awarded (S2/S3/S4)"].sum()
+avg_utilization = filtered_df["Utilization %"].mean() if len(filtered_df) > 0 else 0
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
+col1.metric("💰 Revenue Generated", f"${total_revenue:,.2f}")
+col2.metric("🎟️ Credit Awarded", f"${total_credit:,.2f}")
+col3.metric("📊 Avg Utilization", f"{avg_utilization:.1f}%")
 
-with col1:
-    st.metric("Accumulated Revenue", f"${total_revenue:,.2f}")
+# ------------------
+# KPI Row 2 (NEW)
+# ------------------
+total_quota = int(filtered_df["Quota"].sum())
+total_enrollments = int(filtered_df["Enrollments"].sum())
+total_waitlist = int(filtered_df["Waitlist"].sum())
 
-with col2:
-    st.metric("Accumulated Credit Awarded", f"${total_credit:,.2f}")
+col4, col5, col6 = st.columns(3)
+col4.metric("📦 Total Quota", f"{total_quota:,}")
+col5.metric("🧑‍🎓 Total Enrollments", f"{total_enrollments:,}")
+col6.metric("⏳ Total Waitlist", f"{total_waitlist:,}")
 
-# ─────────────────────────────
-# Data preview
-# ─────────────────────────────
-st.subheader("Filtered Data")
+# ------------------
+# Table
+# ------------------
+st.subheader("Filtered Results")
 st.dataframe(filtered_df, use_container_width=True)
+
+# ------------------
+# Download
+# ------------------
+st.download_button(
+    "⬇️ Download Filtered CSV",
+    data=filtered_df.to_csv(index=False),
+    file_name="filtered_summer_camps.csv",
+    mime="text/csv"
+)
